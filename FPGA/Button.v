@@ -4,7 +4,7 @@ module Debounce (
   output reg  out           // Debounced output
 );
 
-parameter DEFAULT_OUT = 1'b1; // Assuming the button outputs high by default.
+parameter INACTIVE_OUT = 1'b1; // Assuming the button outputs active low by default.
 
 parameter N = 14; // Counter which counts delay for debouncing, which defaults to approx. 8ms.
 
@@ -20,70 +20,70 @@ end
 reg [2:0] state;
 reg [2:0] state_next;
 
-localparam [2:0] state_zero   = 3'b000;
-localparam [2:0] state_high1  = 3'b001;
-localparam [2:0] state_high2  = 3'b010;
-localparam [2:0] state_high3  = 3'b011;
-localparam [2:0] state_one    = 3'b100;
-localparam [2:0] state_low1   = 3'b101;
-localparam [2:0] state_low2   = 3'b110;
-localparam [2:0] state_low3   = 3'b111;
+localparam [2:0] STATE_ZERO   = 3'b000;
+localparam [2:0] STATE_HIGH1  = 3'b001;
+localparam [2:0] STATE_HIGH2  = 3'b010;
+localparam [2:0] STATE_HIGH3  = 3'b011;
+localparam [2:0] STATE_ONE    = 3'b100;
+localparam [2:0] STATE_LOW1   = 3'b101;
+localparam [2:0] STATE_LOW2   = 3'b110;
+localparam [2:0] STATE_LOW3   = 3'b111;
 
 always @(posedge clock or posedge reset) begin
-  state <= reset ? state_zero : state_next;
+  state <= reset ? STATE_ZERO : state_next;
 end
 
 always @(*) begin
   state_next <= state; // Cache the current state.
-  out <= DEFAULT_OUT;
+  out <= INACTIVE_OUT;
 
   case (state)
-    state_zero: begin
-      if(in == ~DEFAULT_OUT)
-        state_next <= state_high1;
+    STATE_ZERO: begin
+      if(in == ~INACTIVE_OUT)
+        state_next <= STATE_HIGH1;
     end
-    state_high1: begin
-      if(in == DEFAULT_OUT)
-        state_next <= state_zero;
+    STATE_HIGH1: begin
+      if(in == INACTIVE_OUT)
+        state_next <= STATE_ZERO;
       else if(tick)
-        state_next <= state_high2;
+        state_next <= STATE_HIGH2;
     end
-    state_high2: begin
-      if(in == DEFAULT_OUT)
-        state_next <= state_zero;
+    STATE_HIGH2: begin
+      if(in == INACTIVE_OUT)
+        state_next <= STATE_ZERO;
       else if(tick)
-        state_next <= state_high3;
+        state_next <= STATE_HIGH3;
     end
-    state_high3: begin
-      if(in == DEFAULT_OUT)
-        state_next <= state_zero;
+    STATE_HIGH3: begin
+      if(in == INACTIVE_OUT)
+        state_next <= STATE_ZERO;
       else if(tick)
-        state_next <= state_one;
+        state_next <= STATE_ONE;
     end
-    state_one: begin
-      out <= ~DEFAULT_OUT;
-      if(~in)
-        state_next <= state_low1;
+    STATE_ONE: begin
+      out <= ~INACTIVE_OUT;
+      if(in == ~INACTIVE_OUT)
+        state_next <= STATE_LOW1;
     end
-    state_low1: begin
-      if(in == ~DEFAULT_OUT)
-        state_next <= state_one;
+    STATE_LOW1: begin
+      if(in == ~INACTIVE_OUT)
+        state_next <= STATE_ONE;
       else if(tick)
-        state_next <= state_low2;
+        state_next <= STATE_LOW2;
     end
-    state_low2: begin
-      if(in == ~DEFAULT_OUT)
-        state_next <= state_one;
+    STATE_LOW2: begin
+      if(in == ~INACTIVE_OUT)
+        state_next <= STATE_ONE;
       else if(tick)
-        state_next <= state_low3;
+        state_next <= STATE_LOW3;
     end
-    state_low2: begin
-      if(in == ~DEFAULT_OUT)
-        state_next <= state_one;
+    STATE_LOW2: begin
+      if(in == ~INACTIVE_OUT)
+        state_next <= STATE_ONE;
       else if(tick)
-        state_next <= state_zero;
+        state_next <= STATE_ZERO;
     end
-    default: state_next <= state_zero;
+    default: state_next <= STATE_ZERO;
   endcase
 end
 

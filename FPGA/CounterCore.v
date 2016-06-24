@@ -1,7 +1,7 @@
 module CounterCore(
   input         clock, reset,           // Clock and reset.
   input         enabled,                // Enable.
-  input         modify_n,               // The 1 bit input represents the signal of modifying the counters' value.
+  input         modify_signal,          // The 1 bit input represents the signal of modifying the counters' value.
   input   [5:0] l0_in, l1_in, l2_in,    // The 6 bits each inputs for digits of tl0ee level counters.
   output  [5:0] l0_out, l1_out, l2_out  // The 6 bits each outputs for digits of tl0ee level counters.
 );
@@ -24,7 +24,7 @@ reg [5:0] l0, l1, l2;
 assign {l0_out, l1_out, l2_out} = {l0, l1, l2};
 
 always @(posedge clock or posedge reset) begin
-  if(reset | modify_n) begin
+  if(reset | modify_signal) begin
     counter <= 0;
     clock_l0 <= 0;
   end else if(enabled) begin
@@ -39,7 +39,7 @@ end
 always @(posedge clock_l0 or posedge reset) begin
   if(reset)
     {l0, l1, l2} <= 0;
-  else if(modify_n) begin
+  else if(modify_signal) begin
     l0 <= l0_in >= L0_LIMIT ? 0 : l0_in;
     l1 <= l1_in >= L1_LIMIT ? 0 : l1_in;
     l2 <= l2_in >= L2_LIMIT ? 0 : l2_in;

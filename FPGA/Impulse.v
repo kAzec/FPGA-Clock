@@ -4,8 +4,12 @@ module Impulse(
   output  impulse
 );
 
-reg current = 0;
-reg last = 0;
+reg current = 1'b0;
+reg last = 1'b0;
+
+initial begin
+  current = flip;
+end
 
 assign impulse = ~current && last;
 

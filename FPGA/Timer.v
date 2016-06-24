@@ -16,8 +16,8 @@ assign reset = button2_debounced;
 /** Pause/Resume control **/
 reg running = 0;
 
-always @(posedge button1_signal) begin
-  running <= ~running;
+always @(posedge button1_signal or posedge reset) begin
+  running <= reset ? 0 : ~running;
 end
 
 /** Counter core **/
@@ -33,27 +33,34 @@ core (
   .clock(clock),
   .reset(reset),
   .enabled(running),
-  .modify_n(1'b0),
-  .l0_in(6'b0),
-  .l1_in(6'b0),
-  .l2_in(6'b0),
+  .modify_signal(1'b0),
+  .l0_in(6'bz),
+  .l1_in(6'bz),
+  .l2_in(6'bz),
   .l0_out(cs_out),
   .l1_out(sec_out),
   .l2_out(min_out)
 );
 
 /** SS:CC/MM:SS switch/auto-switch **/
-localparam POS_SSCC = 0;
-localparam POS_MMSS = 1;
+localparam POS_SSCC = 1'b0;
+localparam POS_MMSS = 1'b1;
 
-reg position = POS_SSCC;
+reg display_position = POS_SSCC;
 reg auto_switch = 0;
 
-always @(posedge button0_signal or posedge auto_switch) begin
-  position <= auto_switch ? POS_MMSS : ~position;
+assign over_1_minute = min_out > 0;
+
+always @(posedge button0_signal or posedge auto_switch or posedge reset) begin
+  if(reset)
+    display_position <= POS_SSCC;
+  else if(auto_switch)
+    display_position <= POS_MMSS;
+  else if(over_1_minute)
+    display_position <= ~display_position;
 end
 
-always @(min_out[0] or posedge reset) begin
+always @(posedge min_out[0] or posedge reset) begin
   if(reset)
     auto_switch <= 0;
   else if(min_out > 0)
@@ -61,8 +68,8 @@ always @(min_out[0] or posedge reset) begin
 end
 
 /** LED display **/
-assign led_num0 = position == 0 ? min_out : sec_out;
-assign led_num1 = position == 0 ? sec_out : cs_out;
-assign led_dot  = min_out > 0 ? 1 : 0;
+assign led_num0 = display_position == 0 ? min_out : sec_out;
+assign led_num1 = display_position == 0 ? sec_out : cs_out;
+assign led_dot  = over_1_minute;
 
 endmodule

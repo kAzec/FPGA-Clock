@@ -1,5 +1,5 @@
 module Top(
-  /**PC104**/
+  /** PC104 **/
   input   [9:0]   ab,
   input           aen,
   input   [7:0]   db_in,
@@ -7,7 +7,6 @@ module Top(
   input           ior_n,
   input           iow_n,
   input           oe_n,
-  
   /** 7 Segments LED **/
   output time_ml,
   output time_ll,
@@ -21,25 +20,18 @@ module Top(
   output led_f,
   output led_g,
   output led_dp,
-  
   /** Buttons **/
   input btn_l,
   input btn_m,
   input btn_h,
-  
   /** Clock **/
   input   clk,
-  
-  /**RS232C**/
-  input   fpga_rxd,
-  output  fpga_txd,
-  
   /** Interrupt **/
   output irq11
 );
 
 /** Reset **/
-assign rst = 0;
+assign rst = 1'b0;
 
 /** Buttons **/
 wire [2:0] debounced;
@@ -74,17 +66,19 @@ Button button2(
 );
 
 /** Clock/Timer modes **/
-localparam MODE_CLOCK = 0;
-localparam MODE_TIMER = 1;
+localparam MODE_CLOCK = 1'b0;
+localparam MODE_TIMER = 1'b1;
 
 reg mode = MODE_CLOCK;
 
 /** Switch between clock/timer mode **/
-always @(posedge long_pressed[1]) begin
+always @(posedge long_pressed[0]) begin
   mode <= ~mode;
 end
 
 /** Clock module **/
+assign display_clock = mode == MODE_CLOCK;
+
 wire [5:0]  clock_num0, clock_num1;
 wire        clock_dp;
 
@@ -97,25 +91,26 @@ Clock clock(
   .data_bus_in        (db_in),
   .data_bus_out       (db_out),
   .irq11              (irq11),
-  .button0_signal     (pressed[0]),
-  .button1_signal     (pressed[1]),
-  .button2_signal     (pressed[2]),
-  .button0_signal_long(long_pressed[0]),
-  .button1_signal_long(long_pressed[1]),
-  .button2_signal_long(long_pressed[2]),
+  .button0_signal     (display_clock ? pressed[0] : 1'b0),
+  .button1_signal     (display_clock ? pressed[1] : 1'b0),
+  .button2_signal     (display_clock ? pressed[2] : 1'b0),
+  .button1_signal_long(display_clock ? long_pressed[1] : 1'b0),
+  .button2_signal_long(display_clock ? long_pressed[2] : 1'b0),
   .led_num0           (clock_num0),
   .led_num1           (clock_num1),
   .led_dot            (clock_dp)
 );
 
 /** Timer module **/
+assign display_timer = mode == MODE_TIMER;
+
 wire [5:0]  timer_num0, timer_num1;
 wire        timer_dp;
 
 Timer timer(
   .clock         (clk),
-  .button0_signal(pressed[0]),
-  .button1_signal(pressed[1]),
+  .button0_signal(display_timer ? pressed[0] : 1'b0),
+  .button1_signal(display_timer ? pressed[1] : 1'b0),
   .led_num0      (timer_num0),
   .led_num1      (timer_num1),
   .led_dot       (timer_dp)

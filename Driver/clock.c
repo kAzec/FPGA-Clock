@@ -50,8 +50,8 @@ static irqreturn_t fpga_clock_interrupt(int irq, void *dev_id)
 
     ioperm(CLOCK_BASE, 1, 1);
     outb(0x80 + hour, CLOCK_BASE);
-    outb(0xA0 + min, CLOCK_BASE);
-    outb(0xC0 + sec, CLOCK_BASE);
+    outb(0xA0 + min,  CLOCK_BASE);
+    outb(0xC0 + sec,  CLOCK_BASE);
 
     spin_unlock(&interrupt_flag_lock);
 
@@ -65,6 +65,8 @@ static struct device_driver fpga_clock_driver = {
 
 static ssize_t fpga_clock_show(struct device_driver *drv, char *buf)
 {
+    spin_lock(&interrupt_flag_lock);
+
     ioperm(CLOCK_BASE, 1, 1);
     outb(0x00, CLOCK_BASE);
     uint8_t hour = inb(CLOCK_BASE);
@@ -75,14 +77,13 @@ static ssize_t fpga_clock_show(struct device_driver *drv, char *buf)
     outb(0x40, CLOCK_BASE);
     uint8_t sec = inb(CLOCK_BASE);
 
+    spin_unlock(&interrupt_flag_lock);
+
     buf[0] = hour;
     buf[1] = min;
     buf[2] = sec;
 
-    ret = 1;
-
-release_and_exit:
-    return ret;
+    return 1;
 }
 
 static ssize_t fpga_clock_store(struct device_driver *drv,

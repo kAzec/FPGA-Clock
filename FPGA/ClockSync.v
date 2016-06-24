@@ -7,15 +7,17 @@ module ClockSync (
   input             aen,
   input       [7:0] data_bus_in,
   output  reg [7:0] data_bus_out,
-  /** Sync **/
+  /** Local time **/
   input       [4:0] hr_in,
   input       [5:0] min_in,
   input       [5:0] sec_in,
+  /** Synced remote time **/
   output  reg [4:0] hr_out,
   output  reg [5:0] min_out,
   output  reg [5:0] sec_out,
-  input             request,
-  output            done,
+  /** Sync **/
+  input             request,  // Request signal that activate a time-sync phase.
+  output            done,     // Notify that time sync is done successfully.
   /** Interrupts **/
   output irq11
 );
@@ -49,7 +51,7 @@ always @(posedge write_n) begin
         CHOICE_HR   : hr_out  <= data_bus_in[3:0];
         CHOICE_MIN  : min_out <= data_bus_in[4:0];
         CHOICE_SEC  : sec_out <= data_bus_in[4:0];
-        default     : done_flip <= ~done_flip;
+        CHOICE_DONE : done_flip <= ~done_flip;
       endcase
     end else if(data_bus_in[6:5] != CHOICE_DONE) // Pre-read time.
       read_choice <= data_bus_in[6:5];
@@ -65,7 +67,6 @@ always @(negedge read_n) begin
       CHOICE_HR   : data_bus_out[3:0] <= hr_in;
       CHOICE_MIN  : data_bus_out[4:0] <= min_in;
       CHOICE_SEC  : data_bus_out[4:0] <= sec_in;
-      default     : /* Do nothing. */;
     endcase
   end
 end
